@@ -13,7 +13,7 @@ dependencies = [
     "deepspeed>=0.16.4",
     "loguru>=0.7.3",
     "qwen-vl-utils>=0.0.10",
-    "transformers>=4.50.0",
+    "transformers @ git+https://github.com/huggingface/transformers/@c772bff31a65c9c6002d0e74797cb130959a3716#egg=transformers",
     "wandb>=0.19.8",
 ]
 
@@ -28,3 +28,6 @@ build-backend = "hatchling.build"
 local = [
     "torch>=2.6.0",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true

@@ -1373,7 +1373,7 @@ requires-dist = [
     { name = "deepspeed", specifier = ">=0.16.4" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "qwen-vl-utils", specifier = ">=0.0.10" },
-    { name = "transformers", specifier = ">=4.50.0" },
+    { name = "transformers", git = "https://github.com/huggingface/transformers/?rev=c772bff31a65c9c6002d0e74797cb130959a3716" },
     { name = "wandb", specifier = ">=0.19.8" },
 ]
 
@@ -1557,8 +1557,8 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.50.0"
-source = { registry = "https://pypi.org/simple" }
+version = "4.49.0.dev0"
+source = { git = "https://github.com/huggingface/transformers/?rev=c772bff31a65c9c6002d0e74797cb130959a3716#c772bff31a65c9c6002d0e74797cb130959a3716" }
 dependencies = [
     { name = "filelock" },
     { name = "huggingface-hub" },
@@ -1570,10 +1570,6 @@ dependencies = [
     { name = "safetensors" },
     { name = "tokenizers" },
     { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/71/164c42d5b4fde92d3637113c7c846b147f8b4c1a3ea486d35a19b069c11e/transformers-4.50.0.tar.gz", hash = "sha256:d4b0f587ec88825981103fee0a1e80230d956ecc8a7f3feeaafbe49a233c88b8", size = 8770757 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/b9/093543d741ddb7ccaeb655c8800968bd5cb42e26a51560287b00b4aa748b/transformers-4.50.0-py3-none-any.whl", hash = "sha256:d75465d523a28bcfef0028c671f682edee29418ab9a5a15cf8a05171e7c54cb7", size = 10183482 },
 ]
 
 [[package]]
