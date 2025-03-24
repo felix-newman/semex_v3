@@ -9,11 +9,13 @@ from torch.optim import AdamW
 from functools import partial
 import wandb
 from loguru import logger
-
+from dotenv import load_dotenv
 from accelerate import Accelerator, DeepSpeedPlugin
 
 from semex_v3.config import Config
 from semex_v3.data import ToyDataSet, collate_fn
+
+load_dotenv()
 
 
 def setup_accelerator(config: Config) -> Accelerator:
