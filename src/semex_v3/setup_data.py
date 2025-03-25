@@ -61,9 +61,6 @@ def setup_hf_dataset(
             zip(chunk["image"], [images_dir] * (end_idx - start_idx), chunk["key"])
         )
 
-        print(len(image_tasks))
-        print(image_tasks[:10])
-
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             executor.map(_save_image, image_tasks)
 

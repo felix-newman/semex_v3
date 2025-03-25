@@ -1,7 +1,8 @@
 # Adapted from https://github.com/zhangfaen/finetune-Qwen2.5-VL/blob/main/finetune_distributed.py
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
+import tempfile
 
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from torch.utils.data import DataLoader
@@ -11,6 +12,9 @@ import wandb
 from loguru import logger
 from dotenv import load_dotenv
 from accelerate import Accelerator, DeepSpeedPlugin
+from vllm import LLM
+import torch
+import random
 
 from semex_v3.config import Config
 from semex_v3.data import QwenDataset, collate_fn
@@ -47,6 +51,57 @@ def write_chat_template(processor, output_dir: Path) -> None:
     logger.info(f"Chat template saved in {output_chat_template_file}")
 
 
+def evaluate_with_vllm(
+    model_path: Path,
+    eval_dataset: QwenDataset,
+    num_samples: int = 100,
+    tensor_parallel_size: int = 1,
+) -> Dict[str, float]:
+    """Run evaluation using VLLM.
+
+    Args:
+        model_path: Path to the saved model checkpoint
+        eval_dataset: Dataset to evaluate on
+        num_samples: Number of samples to evaluate
+        tensor_parallel_size: Number of GPUs to use for tensor parallelism
+
+    Returns:
+        Dictionary containing evaluation metrics
+    """
+    # Sample random indices for evaluation
+    eval_indices = random.sample(
+        range(len(eval_dataset)), min(num_samples, len(eval_dataset))
+    )
+    eval_subset = [eval_dataset[i] for i in eval_indices]
+
+    # Initialize VLLM
+    llm = LLM(
+        model=str(model_path),
+        tensor_parallel_size=tensor_parallel_size,
+        trust_remote_code=True,
+        dtype="bfloat16",
+    )
+
+    # Prepare prompts
+    prompts = []
+    for item in eval_subset:
+        messages = item["messages"]
+        # We only take the system and user messages for prompting
+        prompt_messages = [msg for msg in messages if msg["role"] != "assistant"]
+        prompts.append(prompt_messages)
+
+    # Generate responses
+    outputs = llm.generate(prompts, temperature=0.7, max_tokens=512)
+
+    # Calculate metrics (for now, just average length)
+    avg_length = sum(len(output.text.split()) for output in outputs) / len(outputs)
+
+    return {
+        "eval/avg_response_length": avg_length,
+        # Add more metrics as needed
+    }
+
+
 def train(config: Optional[Config] = None) -> None:
     """Main training function."""
     if config is None:
@@ -74,8 +129,10 @@ def train(config: Optional[Config] = None) -> None:
         padding_side=config.model.padding_side,
     )
 
+    # Load datasets
+    train_dataset = QwenDataset("data/conversations.json")
     train_loader = DataLoader(
-        QwenDataset("data/conversations.json"),
+        train_dataset,
         batch_size=config.training.batch_size,
         collate_fn=partial(collate_fn, processor=processor, device=accelerator.device),
     )
@@ -120,11 +177,45 @@ def train(config: Optional[Config] = None) -> None:
                         f"training loss: {loss.item():.10f}"
                     )
 
+        # Run evaluation at the end of each epoch
+        if accelerator.is_local_main_process:
+            # Create a temporary directory for the checkpoint
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                tmp_path = Path(tmp_dir)
+
+                # Save current model state
+                logger.info("Saving temporary checkpoint for evaluation...")
+                unwrapped_model = accelerator.unwrap_model(model)
+                unwrapped_model.save_pretrained(
+                    tmp_path,
+                    is_main_process=True,
+                    save_function=accelerator.save,
+                )
+                processor.save_pretrained(tmp_path)
+
+                # Run evaluation
+                logger.info("Running VLLM evaluation...")
+                eval_metrics = evaluate_with_vllm(
+                    tmp_path,
+                    train_dataset,
+                    num_samples=100,
+                    tensor_parallel_size=torch.cuda.device_count(),
+                )
+
+                if config.wandb.enabled:
+                    wandb.log(
+                        {
+                            **eval_metrics,
+                            "train/epoch": epoch + 1,
+                        },
+                        step=steps,
+                    )
+
     # Cleanup wandb
     if accelerator.is_local_main_process and config.wandb.enabled:
         wandb.finish()
 
-    # Save model and processor
+    # Save final model and processor
     accelerator.wait_for_everyone()
     unwrapped_model = accelerator.unwrap_model(model)
     unwrapped_model.save_pretrained(

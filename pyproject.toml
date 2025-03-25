@@ -19,6 +19,8 @@ dependencies = [
     "torchvision>=0.21.0",
     "transformers @ git+https://github.com/huggingface/transformers/@c772bff31a65c9c6002d0e74797cb130959a3716#egg=transformers",
     "wandb>=0.19.8",
+    "tqdm>=4.66.0",
+    "vllm>=0.3.3",
 ]
 
 [project.scripts]
