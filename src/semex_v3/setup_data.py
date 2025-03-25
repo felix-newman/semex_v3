@@ -81,7 +81,7 @@ def setup_hf_dataset(
                         "content": [
                             {
                                 "type": "image",
-                                "image": str(image_path.relative_to(output_dir)),
+                                "image": str(image_path),
                             },
                             {
                                 "type": "text",
