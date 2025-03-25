@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from accelerate import Accelerator, DeepSpeedPlugin
 
 from semex_v3.config import Config
-from semex_v3.data import ToyDataSet, collate_fn
+from semex_v3.data import QwenDataset, collate_fn
 
 load_dotenv()
 
@@ -75,7 +75,7 @@ def train(config: Optional[Config] = None) -> None:
     )
 
     train_loader = DataLoader(
-        ToyDataSet("data/conversations.json"),
+        QwenDataset("data/conversations.json"),
         batch_size=config.training.batch_size,
         collate_fn=partial(collate_fn, processor=processor, device=accelerator.device),
     )

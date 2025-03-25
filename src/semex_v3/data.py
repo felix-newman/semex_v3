@@ -13,7 +13,7 @@ from loguru import logger
 import io
 
 
-class ToyDataSet(Dataset):
+class QwenDataset(Dataset):
     """Dataset for fine-tuning Qwen-VL model."""
 
     def __init__(self, data_path: Path | str) -> None:
