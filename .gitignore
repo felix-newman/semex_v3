@@ -2,3 +2,6 @@
 .venv
 wandb/
 train_output/
+data/images/
+data/hf_conversations.json
+__pycache__/

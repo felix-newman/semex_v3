@@ -85,12 +85,9 @@ def train(config: Optional[Config] = None) -> None:
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     # Calculate total number of update steps
-    total_train_batch_size = (
-        config.training.batch_size 
-        * accelerator.num_processes 
-        * config.deepspeed.gradient_accumulation_steps
+    num_update_steps_per_epoch = (
+        len(train_loader) // config.deepspeed.gradient_accumulation_steps
     )
-    num_update_steps_per_epoch = len(train_loader) // config.deepspeed.gradient_accumulation_steps
     num_total_update_steps = num_update_steps_per_epoch * config.training.epochs
 
     for epoch in range(config.training.epochs):
