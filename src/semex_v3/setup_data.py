@@ -2,10 +2,9 @@ from typing import Tuple
 from pathlib import Path
 from PIL import Image
 from loguru import logger
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 import json
 from datasets import load_dataset
-from tqdm import tqdm
 
 
 def _save_image(args: Tuple[Image.Image, Path, str]) -> None:
@@ -58,7 +57,9 @@ def setup_hf_dataset(
 
         # Process images in parallel
         logger.info(f"Processing images for chunk {chunk_idx + 1}/{total_chunks}")
-        image_tasks = list(zip(chunk["image"], [images_dir] * (end_idx - start_idx), chunk["key"]))
+        image_tasks = list(
+            zip(chunk["image"], [images_dir] * (end_idx - start_idx), chunk["key"])
+        )
 
         print(len(image_tasks))
         print(image_tasks[:10])
@@ -66,7 +67,6 @@ def setup_hf_dataset(
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             executor.map(_save_image, image_tasks)
 
-        
         for key, ground_truth in zip(chunk["key"], chunk["ground_truth"]):
             # Skip failed images
             image_path = images_dir / f"{key}.jpg"
